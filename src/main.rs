@@ -6,22 +6,19 @@
 
 use core::panic::PanicInfo;
 use rust_os::println;
+use bootloader::{BootInfo, entry_point};
 
-// Our entry point into the program
-// - no_mangle ensures the compiler outputs a function with the name _start rather than something
-// cryptic or "mangled"
-// - extern "C" tells the compiler to use the C calling convention for this function instead of the
-// unspecified Rust calling convention
-// - "_start" is the default entry point name for most systems
-// - the ! return type means the function is diverging, i.e., not allowed to ever return
-//      -> this is required because the entry point is not called by any function, but rather
-//      invoked directly by the operating system or bootloader
-//      -> instead of returning the entry point should invoke the "exit" system call
-#[no_mangle]
-pub extern "C" fn _start() -> ! {
+entry_point!(kernel_main);
+
+pub fn kernel_main(boot_info: &'static BootInfo) -> ! {
+    use rust_os::memory::BootInfoFrameAllocator;
+
     println!("Hello World{}", "!");
-
     rust_os::init();
+
+    let mut frame_allocator = unsafe {
+        BootInfoFrameAllocator::init(&boot_info.memory_map)
+    };
 
     #[cfg(test)]
     test_main();
@@ -30,7 +27,6 @@ pub extern "C" fn _start() -> ! {
     rust_os::hlt_loop();
 }
 
-// This function is called on panic when not testing
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
