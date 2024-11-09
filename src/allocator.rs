@@ -7,7 +7,6 @@ use x86_64::{
     },
     VirtAddr
 };
-use linked_list_allocator::LockedHeap;
 //use bump::BumpAllocator;
 use linked_list::LinkedListAllocator;
 
