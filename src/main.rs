@@ -1,16 +1,11 @@
 #![no_std]
 #![no_main]
-
-mod vga_buffer;
+#![feature(custom_test_frameworks)]
+#![test_runner(rust_os::test_runner)]
+#![reexport_test_harness_main = "test_main"]
 
 use core::panic::PanicInfo;
-
-// This function is called on panic
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
-    loop {}
-}
+use rust_os::println;
 
 // Our entry point into the program
 // - no_mangle ensures the compiler outputs a function with the name _start rather than something
@@ -25,7 +20,28 @@ fn panic(info: &PanicInfo) -> ! {
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
     println!("Hello World{}", "!");
-    panic!("Some panic message...");
+
+    #[cfg(test)]
+    test_main();
 
     loop {}
+}
+
+// This function is called on panic when not testing
+#[cfg(not(test))]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
+    loop {}
+}
+
+#[cfg(test)]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    rust_os::test_panic_handler(info)
+}
+
+#[test_case]
+fn trivial_assertion() {
+    assert_eq!(1, 1);
 }
